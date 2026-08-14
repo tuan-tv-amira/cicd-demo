@@ -10,7 +10,12 @@ khách hàng chưa quen với kỹ thuật này.
   cài thư viện).
 - `test.js` — 1 bài test cực đơn giản cho đoạn logic trong `app.js` (dùng module `assert` có sẵn
   của Node.js, không cần cài gì thêm).
-- `.github/workflows/ci-cd.yml` — pipeline CI/CD, chạy trên GitHub Actions.
+- `.github/workflows/ci-cd.yml` — pipeline CI/CD tự động (push → test → deploy thật lên GitHub
+  Pages). Xem mục "Luồng hoạt động" bên dưới.
+- `.github/workflows/deploy-demo.yml` — pipeline mô phỏng **đúng cấu trúc** pipeline thật của
+  RiskMapGenerator (`deploy.yml`): bấm tay chọn môi trường dev/prod, build+push nhiều service theo
+  matrix, rồi "restart" service chính — nhưng không gọi AWS thật, mọi bước chỉ echo ra màn hình.
+  Xem mục "Pipeline mô phỏng multi-environment" bên dưới.
 
 ## Luồng hoạt động (đúng như tên gọi CI/CD)
 
@@ -54,6 +59,33 @@ Bạn sửa code, push lên GitHub
 Muốn demo phần "CI chặn code lỗi": sửa `site/app.js` cho hàm `greet` trả về sai giá trị so với
 `test.js` đang kiểm tra, push lên — job `test` sẽ báo đỏ (fail), và job `deploy` **sẽ không chạy**
 (vì `deploy` có điều kiện `needs: test`) — trang web thật không hề bị ảnh hưởng bởi code lỗi.
+
+## Pipeline mô phỏng multi-environment (`deploy-demo.yml`)
+
+Khác với `ci-cd.yml` ở trên (tự động, push là chạy), file này mô phỏng đúng kiểu **CD thủ công theo
+môi trường** giống hệt `RiskMapGenerator/.github/workflows/deploy.yml` - phù hợp để giải thích
+riêng phần "deploy" cho khách hàng đã quen với khái niệm CI/CD cơ bản.
+
+Cách chạy: tab **Actions** → chọn workflow `CD Pipeline (Demo...)` → nút **Run workflow** → chọn
+`environment` là `dev` hoặc `prod` → **Run workflow**.
+
+Cấu trúc y hệt bản thật, chỉ khác duy nhất: không có bước nào chạm vào AWS.
+
+| Bước trong `deploy-demo.yml` | Bước tương ứng trong `deploy.yml` (RMG thật) |
+|---|---|
+| `workflow_dispatch` + chọn môi trường dev/prod | Y hệt |
+| Job `build-push`, matrix `[gateway, worker, lambda]` | Y hệt |
+| `environment: ${{ inputs.environment }}` (GitHub Environment riêng theo môi trường) | Y hệt - bản thật dùng để chọn đúng secret `AWS_ROLE` |
+| "Đăng nhập vào hạ tầng đích" (echo) | "Configure AWS credentials" (assume IAM Role qua OIDC) |
+| Cache + "Tải dữ liệu tham chiếu" (tạo file giả) | Cache + `aws s3 sync` tải dữ liệu bản đồ từ S3 |
+| "Build & push (mô phỏng)" (echo + sleep) | `docker buildx build` + push lên ECR thật |
+| Job `restart-gateway`, cần `build-push` xong mới chạy (`needs`) | Y hệt |
+| "Khởi động lại service chính" (echo + sleep) | `aws ecs update-service --force-new-deployment` + chờ ổn định |
+| Step Summary cuối cùng | Y hệt |
+
+Dùng file này để giải thích: "đây là **chính xác cách** hệ thống thật vận hành khi bấm nút deploy
+production - chỉ khác là ở đây không có tài khoản AWS thật đứng sau để tránh phát sinh chi phí/rủi
+ro khi demo."
 
 ## Liên hệ với pipeline thật của dự án (RiskMapGenerator)
 
