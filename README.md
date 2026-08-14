@@ -1,103 +1,105 @@
-# CI/CD Demo — ví dụ tối giản để giải thích cho khách hàng
+# CI/CD Demo — minimal example to explain the concept to clients
 
-Đây là 1 repo cực nhỏ, **không có mục đích dùng thật** — chỉ để minh hoạ trực quan khái niệm
-**CI/CD** (Continuous Integration / Continuous Deployment), dùng làm ví dụ khi giải thích cho
-khách hàng chưa quen với kỹ thuật này.
+This is a tiny repo with **no real-world purpose** — it only exists to visually illustrate the
+**CI/CD** (Continuous Integration / Continuous Deployment) concept, for use when explaining it to
+a client who isn't familiar with the technique.
 
-## Repo này có gì
+## What's in this repo
 
-- `site/index.html` + `site/app.js` — 1 trang web tĩnh cực đơn giản (không cần build, không cần
-  cài thư viện).
-- `test.js` — 1 bài test cực đơn giản cho đoạn logic trong `app.js` (dùng module `assert` có sẵn
-  của Node.js, không cần cài gì thêm).
-- `.github/workflows/ci-cd.yml` — pipeline CI/CD tự động (push → test → deploy thật lên GitHub
-  Pages). Xem mục "Luồng hoạt động" bên dưới.
-- `.github/workflows/deploy-demo.yml` — pipeline mô phỏng **đúng cấu trúc** pipeline thật của
-  RiskMapGenerator (`deploy.yml`): bấm tay chọn môi trường dev/prod, build+push nhiều service theo
-  matrix, rồi "restart" service chính — nhưng không gọi AWS thật, mọi bước chỉ echo ra màn hình.
-  Xem mục "Pipeline mô phỏng multi-environment" bên dưới.
+- `site/index.html` + `site/app.js` — an extremely simple static website (no build step, no
+  libraries to install).
+- `test.js` — a trivially simple test for the logic in `app.js` (uses Node's built-in `assert`
+  module, nothing to install).
+- `.github/workflows/ci-cd.yml` — the automatic CI/CD pipeline (push → test → real deploy to
+  GitHub Pages). See "How it works" below.
+- `.github/workflows/deploy-demo.yml` — a pipeline that mirrors the **exact structure** of
+  RiskMapGenerator's real pipeline (`deploy.yml`): manually pick a dev/prod environment,
+  build+push several services via a matrix, then "restart" the main service — but without calling
+  real AWS, every step just echoes to the log. See "Multi-environment simulated pipeline" below.
 
-## Luồng hoạt động (đúng như tên gọi CI/CD)
+## How it works (exactly what CI/CD stands for)
 
 ```
-Bạn sửa code, push lên GitHub
+You edit code, push to GitHub
         │
         ▼
 ┌───────────────────┐
-│  1) CI             │   Tự động chạy `node test.js`.
-│  Kiểm tra code     │   Nếu test fail → dừng lại ở đây, KHÔNG deploy gì cả.
+│  1) CI             │   Automatically runs `node test.js`.
+│  Check the code    │   If the test fails → stops right here, NOTHING gets deployed.
 └───────────────────┘
-        │ (chỉ khi test pass VÀ code đã ở nhánh main)
+        │ (only if the test passes AND the code is on the main branch)
         ▼
 ┌───────────────────┐
-│  2) CD             │   Tự động đóng gói thư mục site/ và đưa lên GitHub Pages -
-│  Triển khai        │   một trang web thật, có URL công khai, ai cũng xem được.
+│  2) CD             │   Automatically packages the site/ folder and publishes it to
+│  Deploy            │   GitHub Pages — a real website, with a public URL, anyone can view.
 └───────────────────┘
         │
         ▼
-  Trang web thật cập nhật ngay,
-  không ai phải bấm nút "deploy" tay
+  The live website updates immediately,
+  nobody has to click a "deploy" button
 ```
 
-Đây chính xác là 2 nửa của cụm từ CI/CD:
-- **CI (Continuous Integration)** = phần 1 — tự động *kiểm tra* mỗi khi có thay đổi.
-- **CD (Continuous Deployment)** = phần 2 — tự động *triển khai* nếu kiểm tra pass.
+This is exactly the two halves of the term CI/CD:
+- **CI (Continuous Integration)** = step 1 — automatically *checks* every change.
+- **CD (Continuous Deployment)** = step 2 — automatically *deploys* it if the check passes.
 
-## Cách chạy thử để demo cho khách hàng
+## How to try this out for a client demo
 
-1. Tạo 1 repo mới trên GitHub (public), push toàn bộ thư mục này lên nhánh `main`.
-2. Vào **Settings → Pages** của repo, mục "Build and deployment" chọn source là **GitHub Actions**
-   (chỉ cần làm 1 lần).
-3. Vào tab **Actions** — sẽ thấy pipeline `CI/CD Demo` tự chạy ngay sau khi push, đi qua đúng 2 bước
-   `1) CI` rồi `2) CD` như sơ đồ trên.
-4. Sau khi job `deploy` chạy xong, trang web sẽ có ở địa chỉ dạng
-   `https://<tên-tài-khoản>.github.io/<tên-repo>/`.
-5. **Để demo "phép màu" cho khách hàng**: sửa 1 chữ trong `site/index.html` (ví dụ đổi câu chào),
-   commit, push — rồi mở tab Actions cho khách xem pipeline tự chạy, và refresh lại trang web thật
-   để thấy nội dung đã đổi **mà không ai bấm deploy tay**.
+1. Create a new (public) repo on GitHub, push this entire folder to its `main` branch.
+2. Go to **Settings → Pages**, under "Build and deployment" set the source to **GitHub Actions**
+   (only needs doing once).
+3. Open the **Actions** tab — the `CI/CD Demo` pipeline will run automatically right after the
+   push, going through steps `1) CI` then `2) CD` exactly as in the diagram above.
+4. Once the `deploy` job finishes, the website will be live at a URL like
+   `https://<your-account>.github.io/<repo-name>/`.
+5. **To demo the "magic" to a client**: change one word in `site/index.html` (e.g. the greeting
+   text), commit, push — then open the Actions tab for them to watch the pipeline run, and refresh
+   the live site to show the content changed **with nobody deploying it by hand**.
 
-Muốn demo phần "CI chặn code lỗi": sửa `site/app.js` cho hàm `greet` trả về sai giá trị so với
-`test.js` đang kiểm tra, push lên — job `test` sẽ báo đỏ (fail), và job `deploy` **sẽ không chạy**
-(vì `deploy` có điều kiện `needs: test`) — trang web thật không hề bị ảnh hưởng bởi code lỗi.
+To demo "CI blocks broken code": edit `site/app.js` so `greet` returns something different from
+what `test.js` expects, then push — the `test` job will fail (show red), and the `deploy` job
+**will not run** (because `deploy` depends on `needs: test`) — the live website is completely
+unaffected by the broken code.
 
-## Pipeline mô phỏng multi-environment (`deploy-demo.yml`)
+## Multi-environment simulated pipeline (`deploy-demo.yml`)
 
-Khác với `ci-cd.yml` ở trên (tự động, push là chạy), file này mô phỏng đúng kiểu **CD thủ công theo
-môi trường** giống hệt `RiskMapGenerator/.github/workflows/deploy.yml` - phù hợp để giải thích
-riêng phần "deploy" cho khách hàng đã quen với khái niệm CI/CD cơ bản.
+Unlike `ci-cd.yml` above (fully automatic, runs on every push), this file mirrors the **manual,
+per-environment CD** style used by `RiskMapGenerator/.github/workflows/deploy.yml` — useful for
+explaining the "deploy" side specifically to a client who's already comfortable with basic CI/CD.
 
-Cách chạy: tab **Actions** → chọn workflow `CD Pipeline (Demo...)` → nút **Run workflow** → chọn
-`environment` là `dev` hoặc `prod` → **Run workflow**.
+How to run it: **Actions** tab → select the `CD Pipeline (Demo...)` workflow → **Run workflow**
+button → pick `environment` as `dev` or `prod` → **Run workflow**.
 
-Cấu trúc y hệt bản thật, chỉ khác duy nhất: không có bước nào chạm vào AWS.
+Same structure as the real pipeline, with exactly one difference: no step touches AWS.
 
-| Bước trong `deploy-demo.yml` | Bước tương ứng trong `deploy.yml` (RMG thật) |
+| Step in `deploy-demo.yml` | Corresponding step in `deploy.yml` (real RMG pipeline) |
 |---|---|
-| `workflow_dispatch` + chọn môi trường dev/prod | Y hệt |
-| Job `build-push`, matrix `[gateway, worker, lambda]` | Y hệt |
-| `environment: ${{ inputs.environment }}` (GitHub Environment riêng theo môi trường) | Y hệt - bản thật dùng để chọn đúng secret `AWS_ROLE` |
-| "Đăng nhập vào hạ tầng đích" (echo) | "Configure AWS credentials" (assume IAM Role qua OIDC) |
-| Cache + "Tải dữ liệu tham chiếu" (tạo file giả) | Cache + `aws s3 sync` tải dữ liệu bản đồ từ S3 |
-| "Build & push (mô phỏng)" (echo + sleep) | `docker buildx build` + push lên ECR thật |
-| Job `restart-gateway`, cần `build-push` xong mới chạy (`needs`) | Y hệt |
-| "Khởi động lại service chính" (echo + sleep) | `aws ecs update-service --force-new-deployment` + chờ ổn định |
-| Step Summary cuối cùng | Y hệt |
+| `workflow_dispatch` + pick dev/prod environment | Identical |
+| `build-push` job, matrix `[gateway, worker, lambda]` | Identical |
+| `environment: ${{ inputs.environment }}` (a separate GitHub Environment per environment) | Identical - the real pipeline uses this to pick the right `AWS_ROLE` secret |
+| "Log in to the target infrastructure" (echo) | "Configure AWS credentials" (assumes an IAM Role via OIDC) |
+| Cache + "Fetch reference data" (creates a placeholder file) | Cache + `aws s3 sync` downloading map data from S3 |
+| "Build & push (simulated)" (echo + sleep) | `docker buildx build` + a real push to ECR |
+| `restart-gateway` job, waits for `build-push` to finish (`needs`) | Identical |
+| "Restart the main service" (echo + sleep) | `aws ecs update-service --force-new-deployment` + waiting for it to stabilize |
+| Final Step Summary | Identical |
 
-Dùng file này để giải thích: "đây là **chính xác cách** hệ thống thật vận hành khi bấm nút deploy
-production - chỉ khác là ở đây không có tài khoản AWS thật đứng sau để tránh phát sinh chi phí/rủi
-ro khi demo."
+Use this file to explain: "this is **exactly how** the real system behaves when you click deploy
+to production - the only difference is there's no real AWS account behind it here, to avoid any
+cost or risk while demoing."
 
-## Liên hệ với pipeline thật của dự án (RiskMapGenerator)
+## How this relates to the project's real pipeline (RiskMapGenerator)
 
-Ví dụ này cố tình đơn giản hoá tối đa, nhưng đúng cấu trúc với pipeline CI/CD thật đang dùng:
+This example is deliberately simplified as much as possible, but matches the structure of the
+real CI/CD pipeline in use:
 
-| Ở demo này | Ở RiskMapGenerator |
+| In this demo | In RiskMapGenerator |
 |---|---|
-| `node test.js` | Build + chạy test Java/Maven (`ci.yml`) |
-| Deploy lên GitHub Pages | Build Docker image → push lên AWS ECR → restart ECS/Lambda (`deploy.yml`) |
-| Trigger: push vào `main` | Trigger: bấm tay ("Run workflow") chọn môi trường dev/prod |
-| Environment: GitHub Pages (miễn phí, không cần tài khoản) | Environment: tài khoản AWS thật, có `dev`/`prod` riêng |
+| `node test.js` | Build + run Java/Maven tests (`ci.yml`) |
+| Deploy to GitHub Pages | Build Docker image → push to AWS ECR → restart ECS/Lambda (`deploy.yml`) |
+| Trigger: push to `main` | Trigger: manual ("Run workflow"), pick dev/prod environment |
+| Environment: GitHub Pages (free, no account needed) | Environment: a real AWS account, with separate `dev`/`prod` |
 
-Ý tưởng cốt lõi giống hệt nhau: **code luôn được kiểm tra tự động trước, và chỉ những gì đã qua
-kiểm tra mới được đưa lên môi trường thật** — con người không còn phải tự tay build/copy/deploy
-thủ công, giảm rủi ro sai sót.
+The core idea is identical either way: **code is always checked automatically first, and only
+what has passed that check gets published to the real environment** — no one has to manually
+build/copy/deploy anything, which cuts down on mistakes.

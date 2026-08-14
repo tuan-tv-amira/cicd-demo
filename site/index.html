@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -25,21 +25,23 @@
 </style>
 </head>
 <body>
-  <h1 id="greeting">Đang tải...</h1>
+  <h1 id="greeting">Loading...</h1>
 
   <div class="box">
-    <p>Trang web này <strong>không có ai bấm nút "deploy" tay cả</strong>.</p>
-    <p>Mỗi khi có người thay đổi code và merge vào nhánh <code>main</code>, GitHub Actions tự động:</p>
+    <p>Nobody clicked a "deploy" button to publish this page.</p>
+    <p>Every time someone changes code and merges it into <code>main</code>, GitHub Actions
+    automatically:</p>
     <ol>
-      <li><strong>Kiểm tra (CI)</strong> — chạy test để chắc chắn code không lỗi.</li>
-      <li><strong>Triển khai (CD)</strong> — nếu test pass, tự động đưa bản mới nhất lên chính trang bạn đang xem.</li>
+      <li><strong>Tests (CI)</strong> — runs the test suite to make sure the code isn't broken.</li>
+      <li><strong>Deploys (CD)</strong> — if the tests pass, automatically publishes the latest
+      version to the very page you're looking at.</li>
     </ol>
-    <p>Xem chi tiết từng bước tại tab <strong>Actions</strong> của repo trên GitHub.</p>
+    <p>See every step in the <strong>Actions</strong> tab of the repo on GitHub.</p>
   </div>
 
   <script src="app.js"></script>
   <script>
-    document.getElementById("greeting").textContent = greet("bạn");
+    document.getElementById("greeting").textContent = greet("there");
   </script>
 </body>
 </html>

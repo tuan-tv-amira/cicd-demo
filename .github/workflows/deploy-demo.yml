@@ -1,22 +1,23 @@
-name: CD Pipeline (Demo - giống cấu trúc RiskMapGenerator/deploy.yml)
+name: CD Pipeline (Demo - mirrors RiskMapGenerator/deploy.yml)
 
-# Bản demo mô phỏng ĐÚNG CẤU TRÚC của rmg/RiskMapGenerator/.github/workflows/deploy.yml:
-# cùng kiểu trigger, cùng cách chọn môi trường, cùng thứ tự job/step - chỉ khác duy nhất 1 điều:
-# KHÔNG gọi/tương tác với AWS thật nào. Mỗi bước "đăng nhập / build / push / restart" ở đây chỉ
-# echo ra màn hình để mô phỏng, an toàn để demo cho khách hàng mà không cần tài khoản cloud nào.
+# A demo that mirrors the EXACT STRUCTURE of rmg/RiskMapGenerator/.github/workflows/deploy.yml:
+# same trigger type, same environment selection, same job/step order - with exactly one
+# difference: it does NOT call or interact with real AWS. Every "login / build / push / restart"
+# step here just echoes to the log to simulate the flow, so it's safe to demo to a client with no
+# cloud account required.
 #
-# Đối chiếu với bản thật:
-#   - "Đăng nhập vào hạ tầng đích"      <-> "Configure AWS credentials" (assume IAM Role qua OIDC)
-#   - "Tải dữ liệu tham chiếu"          <-> "Sync tiles_data from S3"
-#   - "Build & push (mô phỏng)"         <-> build Docker image + push lên ECR
-#   - "Khởi động lại service chính"     <-> force-new-deployment + wait cho ECS ổn định
+# Mapping to the real pipeline:
+#   - "Log in to the target infrastructure" <-> "Configure AWS credentials" (assume an IAM Role via OIDC)
+#   - "Fetch reference data"                <-> "Sync tiles_data from S3"
+#   - "Build & push (simulated)"            <-> building the Docker image + pushing to ECR
+#   - "Restart the main service"            <-> force-new-deployment + waiting for ECS to stabilize
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Môi trường muốn "triển khai" tới'
+        description: 'Environment to "deploy" to'
         type: choice
-        options: [dev, prod] # thêm môi trường mới: chỉ cần thêm tên vào đây
+        options: [dev, prod] # adding a new environment: just add its name here
         required: true
 
 concurrency:
@@ -28,66 +29,67 @@ env:
 
 jobs:
   build-push:
-    name: "1) Build & push (mô phỏng)"
+    name: "1) Build & push (simulated)"
     runs-on: ubuntu-latest
-    # Mỗi môi trường (dev/prod) là 1 GitHub Environment riêng, có thể chứa secret khác nhau -
-    # ở bản thật, đây là chỗ secret AWS_ROLE trỏ tới đúng tài khoản AWS của môi trường đó.
+    # Each environment (dev/prod) is its own GitHub Environment, and can hold a different secret -
+    # in the real pipeline, this is where the AWS_ROLE secret points to the right AWS account
+    # for that environment.
     environment: ${{ inputs.environment }}
     strategy:
       matrix:
         service: [gateway, worker, lambda]
     steps:
-      - name: Lấy code về
+      - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: "Đăng nhập vào hạ tầng đích (mô phỏng)"
+      - name: "Log in to the target infrastructure (simulated)"
         run: |
-          echo "Đăng nhập vào môi trường '${{ inputs.environment }}' bằng secret DEPLOY_TOKEN..."
-          echo "(bản thật: assume 1 IAM Role trên AWS qua OIDC - đúng account của môi trường này)"
+          echo "Logging in to environment '${{ inputs.environment }}' using the DEPLOY_TOKEN secret..."
+          echo "(real pipeline: assumes an IAM Role on AWS via OIDC - the exact account for this environment)"
           if [ -z "${{ secrets.DEPLOY_TOKEN }}" ]; then
-            echo "::notice::Chưa cấu hình secret DEPLOY_TOKEN cho environment '${{ inputs.environment }}' - không sao, demo vẫn chạy tiếp."
+            echo "::notice::DEPLOY_TOKEN secret not set for environment '${{ inputs.environment }}' - that's fine, the demo continues anyway."
           fi
 
-      - name: Cache dữ liệu tham chiếu
+      - name: Cache reference data
         id: cache-data
         uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: reference-data
           key: reference-data-v${{ env.DATA_CACHE_VERSION }}
 
-      - name: "Tải dữ liệu tham chiếu (mô phỏng)"
-        # Bản thật: tải ~440MB dữ liệu bản đồ từ S3 (chỉ tải khi cache miss).
+      - name: "Fetch reference data (simulated)"
+        # Real pipeline: downloads ~440MB of map data from S3 (only when there's a cache miss).
         if: steps.cache-data.outputs.cache-hit != 'true'
         run: |
           mkdir -p reference-data
-          echo "Dữ liệu tải lúc $(date -u +%FT%TZ)" > reference-data/data.txt
-          echo "Đã tải xong dữ liệu tham chiếu (mô phỏng)."
+          echo "Data fetched at $(date -u +%FT%TZ)" > reference-data/data.txt
+          echo "Reference data fetched (simulated)."
 
-      - name: "Build & push ${{ matrix.service }} (mô phỏng)"
+      - name: "Build & push ${{ matrix.service }} (simulated)"
         run: |
-          echo "Đang build image '${{ matrix.service }}' cho môi trường '${{ inputs.environment }}'..."
+          echo "Building the '${{ matrix.service }}' image for environment '${{ inputs.environment }}'..."
           sleep 2
-          echo "Đã push '${{ matrix.service }}:latest' lên registry (mô phỏng - không có gì thật được push)."
+          echo "Pushed '${{ matrix.service }}:latest' to the registry (simulated - nothing real was pushed)."
 
   restart-gateway:
-    name: "2) Khởi động lại service chính (mô phỏng)"
+    name: "2) Restart the main service (simulated)"
     needs: build-push
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - name: "Khởi động lại service chính (mô phỏng)"
+      - name: "Restart the main service (simulated)"
         run: |
-          echo "Đang restart service chính trên môi trường '${{ inputs.environment }}'..."
+          echo "Restarting the main service in environment '${{ inputs.environment }}'..."
           sleep 2
-          echo "Service đã ổn định với phiên bản mới."
+          echo "Service is stable on the new version."
 
-      - name: Tổng kết
+      - name: Summary
         run: |
           {
-            echo "### Đã \"triển khai\" (demo) tới \`${{ inputs.environment }}\`"
+            echo "### \"Deployed\" (demo) to \`${{ inputs.environment }}\`"
             echo ""
-            echo "Image mô phỏng đã build & push: gateway, worker, lambda."
-            echo "- Service chính đã \"restart\" và ổn định (mô phỏng)."
+            echo "Simulated images built & pushed: gateway, worker, lambda."
+            echo "- Main service \"restarted\" and stable (simulated)."
             echo ""
-            echo "_Không có gì thật sự chạy trên cloud - toàn bộ pipeline này chỉ để demo cấu trúc CI/CD._"
+            echo "_Nothing real ran on any cloud - this pipeline only demonstrates the CI/CD structure._"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -1,14 +1,14 @@
 name: CI/CD Demo
 
-# Ví dụ tối giản minh hoạ khái niệm CI/CD:
+# A minimal example illustrating the CI/CD concept:
 #
-# - CI (Continuous Integration - "tích hợp liên tục"): mỗi khi có thay đổi code (push hoặc mở PR),
-#   hệ thống TỰ ĐỘNG kiểm tra code (chạy test) - không cần ai bấm tay.
+# - CI (Continuous Integration): every time code changes (push or PR), the system AUTOMATICALLY
+#   checks the code (runs tests) - nobody has to do it by hand.
 #
-# - CD (Continuous Deployment - "triển khai liên tục"): nếu kiểm tra ở trên PASS, và thay đổi đó
-#   đã thật sự nằm trên nhánh main (không phải chỉ là 1 PR đang chờ duyệt), hệ thống TỰ ĐỘNG đưa
-#   bản mới lên môi trường thật (ở đây là 1 trang web công khai, dùng GitHub Pages cho đơn giản,
-#   không cần tài khoản cloud nào) - không cần ai bấm tay "deploy".
+# - CD (Continuous Deployment): if the check above PASSES, and the change has actually landed on
+#   the main branch (not just a PR waiting for review), the system AUTOMATICALLY publishes the
+#   new version to a real environment (here, a public website via GitHub Pages, for simplicity -
+#   no cloud account needed) - nobody has to click "deploy" by hand.
 on:
   push:
     branches: [main]
@@ -20,48 +20,48 @@ permissions:
   pages: write
   id-token: write
 
-# Chỉ cho phép 1 lượt deploy chạy tại 1 thời điểm.
+# Only allow one deployment to run at a time.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
   test:
-    name: "1) CI - Kiểm tra code tự động"
+    name: "1) CI - Automated code check"
     runs-on: ubuntu-latest
     steps:
-      - name: Lấy code về
+      - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Cài Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
 
-      - name: Chạy test
+      - name: Run tests
         run: node test.js
 
   deploy:
-    name: "2) CD - Tự động triển khai lên production"
+    name: "2) CD - Automatic deployment to production"
     needs: test
-    # Chỉ deploy khi code đã thật sự vào main (push) - không deploy khi mới chỉ là PR đang chờ duyệt.
+    # Only deploy once the change is really on main (push) - not for a PR still waiting for review.
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Lấy code về
+      - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Chuẩn bị GitHub Pages
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
-      - name: Đóng gói trang web (thư mục site/)
+      - name: Package the website (site/ folder)
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: "./site"
 
-      - name: Triển khai lên GitHub Pages
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

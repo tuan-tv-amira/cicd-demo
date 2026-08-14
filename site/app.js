@@ -1,12 +1,12 @@
-// Đây là "logic ứng dụng" — cố tình viết cực đơn giản để demo dễ hiểu.
+// This is the tiny "app logic" - kept deliberately simple for the demo.
 function greet(name) {
   if (!name || typeof name !== "string") {
-    throw new Error("name phải là 1 chuỗi không rỗng");
+    throw new Error("name must be a non-empty string");
   }
-  return `Xin chào, ${name}! Trang này được build và deploy tự động bởi CI/CD.`;
+  return `Hello, ${name}! This page was built and deployed automatically by CI/CD.`;
 }
 
-// Dòng dưới giúp file này dùng được cả trong Node (để test) và trong trình duyệt (để hiển thị).
+// The line below lets this file work both in Node (for testing) and in the browser (for display).
 if (typeof module !== "undefined") {
   module.exports = { greet };
 }
